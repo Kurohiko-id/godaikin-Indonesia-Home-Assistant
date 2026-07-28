@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import timedelta
 import logging
 from typing import TYPE_CHECKING, Any
@@ -56,6 +57,18 @@ class GodaikinDataUpdateCoordinator(
             # Update energy for each aircond
             for aircond in airconds:
                 self.energy.accumulate_energy_usage_for_aircond(aircond)
+
+            # Dump full shadow state each poll to help diagnose unexpected
+            # state changes (e.g. an AC turning off from a timer/schedule).
+            # Guarded so asdict() only runs when debug logging is enabled.
+            if self.logger.isEnabledFor(logging.DEBUG):
+                for aircond in airconds:
+                    self.logger.debug(
+                        "Shadow state for %s (%s): %s",
+                        aircond.ACName,
+                        aircond.unique_id,
+                        asdict(aircond.shadowState),
+                    )
 
             return {aircond.unique_id: aircond for aircond in airconds}
         except Exception as err:

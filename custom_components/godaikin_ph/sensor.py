@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
+    EntityCategory,
     UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
@@ -47,6 +48,7 @@ async def async_setup_entry(
                 GodaikinOutdoorTempSensor(coordinator, unique_id),
                 GodaikinEnergySensor(coordinator, unique_id),
                 GodaikinMoldProofRemainingSensor(coordinator, unique_id),
+                GodaikinTimerStateSensor(coordinator, unique_id),
             ]
         )
         # Units without a humidity sensor always report Sta_IDRh as 0
@@ -239,3 +241,39 @@ class GodaikinMoldProofRemainingSensor(GodaikinSensorBase):
             self._unique_id
         )
         return round(remaining_seconds / 60, 1)
+
+
+class GodaikinTimerStateSensor(GodaikinSensorBase):
+    """Diagnostic sensor exposing the raw timer/schedule fields.
+
+    GO DAIKIN units expose timer and schedule state, but the exact encoding
+    of these fields is not yet decoded. This sensor surfaces the raw values so
+    that an armed timer/schedule can be observed and reverse-engineered. Its
+    state is ``timerState``; ``Bar_Timer`` and ``sch`` are extra attributes.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the timer-state diagnostic sensor."""
+        super().__init__(coordinator, unique_id, "timer_state")
+        self._attr_name = f"{self.aircond.ACName} Timer state"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the raw timer state value."""
+        return self.aircond.shadowState.timerState
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the related raw timer/schedule flags."""
+        shadow = self.aircond.shadowState
+        return {
+            "bar_timer": shadow.Bar_Timer,
+            "sch": shadow.sch,
+        }
