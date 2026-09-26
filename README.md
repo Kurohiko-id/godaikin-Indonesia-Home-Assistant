@@ -1,8 +1,8 @@
-# GO DAIKIN (Philippines) - Home Assistant Integration
+# GO DAIKIN Indonesia - Home Assistant Integration
 
-A native Home Assistant integration for GO DAIKIN air conditioners in the **Philippine** region. This integration communicates directly with the GO DAIKIN cloud API.
+A native Home Assistant integration for GO DAIKIN air conditioners, forked and maintained for **Indonesia** users. This integration communicates directly with the GO DAIKIN cloud API.
 
-NOTE: This is an unofficial integration and is not affiliated with Daikin. It targets the Philippine GO DAIKIN backend, which uses a different login and API than other regions.
+NOTE: This is an unofficial integration and is not affiliated with Daikin. It authenticates through the Philippine GO DAIKIN backend (a different login/API than other regions), which also works for Indonesia-region accounts since both regions share the same underlying user database.
 
 ## Features
 - Auto-discover air conditioners in GO DAIKIN
@@ -12,14 +12,25 @@ NOTE: This is an unofficial integration and is not affiliated with Daikin. It ta
 - Eco/Breeze/Powerful/Sleep preset modes
 - Vertical and Horizontal fan swings
 - Power and Energy sensors
+- Comprehensive diagnostics:
+  - Compressor frequency, current, and running status
+  - Indoor/Outdoor coil and discharge temperatures
+  - Indoor/Outdoor fan RPM
+  - Error code monitoring
+  - Humidity sensor (when available)
 - Status LED control
+- Streamer (air purification) control
 - Simulated mold-proof
 
 ## Installation
 
 ### HACS (Recommended)
-1. [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ianpogi5&repository=godaikin-ph-ha)
-2. Or, add `https://github.com/ianpogi5/godaikin-ph-ha` as a custom repository in HACS, then search for "GO DAIKIN (Philippines)" and install
+1. [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Kurohiko-id&repository=godaikin-Indonesia-Home-Assistant)
+2. Or, add this as a custom repository in HACS:
+   - Open HACS → **Integrations** → **⋮ (menu)** → **Custom repositories**
+   - Paste: `https://github.com/Kurohiko-id/godaikin-Indonesia-Home-Assistant`
+   - Category: **Integration**
+   - Click **Create** → Search for "GO DAIKIN (Philippines)" and install
 
 ### Manual Installation
 1. Copy the `custom_components/godaikin_ph` directory to your Home Assistant's `custom_components` directory
@@ -49,8 +60,21 @@ For each air conditioner, the following entities will be created:
 - **Power**: Current power consumption (W)
 - **Indoor Temperature**: Indoor room temperature (°C)
 - **Outdoor Temperature**: Outdoor air temperature (°C)
+- **Indoor Humidity**: Indoor relative humidity (%) — available on units with humidity sensing
 - **Energy**: Total energy consumption (kWh). This counter resets every time HA restarts.
 - **Mold-proof remaining**: Remaining time in mold-proof mode
+
+### Diagnostic Sensors
+Advanced telemetry, enabled by default:
+- **Compressor Running**: Binary indicator of compressor operation
+- **Compressor Frequency**: Operating frequency (Hz)
+- **Current**: Outdoor unit current draw (A)
+- **Indoor Fan RPM**: Indoor fan speed
+- **Outdoor Fan RPM**: Outdoor fan speed
+- **Error Code**: Unit error code (0 = normal), grouped under the device's "Diagnostic" section
+- **Indoor Coil Temperature**: Indoor heat exchanger temperature (°C), grouped under "Diagnostic"
+- **Outdoor Coil Temperature**: Outdoor heat exchanger temperature (°C), grouped under "Diagnostic"
+- **Discharge Temperature**: Compressor discharge temperature (°C), grouped under "Diagnostic"
 
 ### Configuration
 - **Mold-proof**: After the aircond is turned off, run it on fan mode for an hour to reduce mold and bacteria buildup. This is simulated and does not use Daikin's built-in mold-proof mode.
