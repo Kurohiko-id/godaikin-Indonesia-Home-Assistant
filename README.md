@@ -1,6 +1,7 @@
 # GO DAIKIN Indonesia - Home Assistant Integration
 
 A native Home Assistant integration for GO DAIKIN air conditioners, forked and maintained for **Indonesia** users. This integration communicates directly with the GO DAIKIN cloud API.
+Integrasi AC Daikin Nusantara dan daikin lain yang pake aplikasi GO Daikin Indonesia ke Home Assistant
 
 NOTE: This is an unofficial integration and is not affiliated with Daikin. It authenticates through the Philippine GO DAIKIN backend (a different login/API than other regions), which also works for Indonesia-region accounts since both regions share the same underlying user database.
 
