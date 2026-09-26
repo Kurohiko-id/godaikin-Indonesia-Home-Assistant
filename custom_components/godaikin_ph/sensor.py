@@ -14,7 +14,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfElectricCurrent,
     UnitOfEnergy,
+    UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
     UnitOfTime,
@@ -49,11 +51,21 @@ async def async_setup_entry(
                 GodaikinEnergySensor(coordinator, unique_id),
                 GodaikinMoldProofRemainingSensor(coordinator, unique_id),
                 GodaikinTimerStateSensor(coordinator, unique_id),
+                GodaikinErrorCodeSensor(coordinator, unique_id),
+                GodaikinCompressorFrequencySensor(coordinator, unique_id),
+                GodaikinCurrentSensor(coordinator, unique_id),
+                GodaikinIndoorCoilTempSensor(coordinator, unique_id),
+                GodaikinOutdoorCoilTempSensor(coordinator, unique_id),
+                GodaikinDischargeTempSensor(coordinator, unique_id),
+                GodaikinIndoorFanRpmSensor(coordinator, unique_id),
+                GodaikinOutdoorFanRpmSensor(coordinator, unique_id),
             ]
         )
-        # Units without a humidity sensor always report Sta_IDRh as 0
-        # (there is no Ena_* capability flag for it).
-        if coordinator.data[unique_id].shadowState.Sta_IDRh:
+        # Units without a humidity sensor report Sta_IDRh as 0 when off and
+        # 255 (invalid sentinel, not a real relative-humidity reading) when
+        # on. Only create the entity for units that reported a plausible
+        # in-range value at least once.
+        if 0 < coordinator.data[unique_id].shadowState.Sta_IDRh <= 100:
             entities.append(GodaikinHumiditySensor(coordinator, unique_id))
 
     async_add_entities(entities)
@@ -180,7 +192,7 @@ class GodaikinHumiditySensor(GodaikinSensorBase):
     def native_value(self) -> float | None:
         """Return the indoor relative humidity."""
         humidity = self.aircond.shadowState.Sta_IDRh
-        return humidity if humidity else None
+        return humidity if 0 < humidity <= 100 else None
 
 
 class GodaikinEnergySensor(GodaikinSensorBase):
@@ -277,3 +289,179 @@ class GodaikinTimerStateSensor(GodaikinSensorBase):
             "bar_timer": shadow.Bar_Timer,
             "sch": shadow.sch,
         }
+
+
+class GodaikinErrorCodeSensor(GodaikinSensorBase):
+    """Diagnostic sensor exposing the raw error code."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the error code sensor."""
+        super().__init__(coordinator, unique_id, "error_code")
+        self._attr_name = f"{self.aircond.ACName} Error Code"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the raw error code (0 = normal)."""
+        return self.aircond.shadowState.Sta_ErrCode
+
+
+class GodaikinCompressorFrequencySensor(GodaikinSensorBase):
+    """Compressor frequency sensor for GO DAIKIN air conditioner."""
+
+    _attr_device_class = SensorDeviceClass.FREQUENCY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the compressor frequency sensor."""
+        super().__init__(coordinator, unique_id, "compressor_frequency")
+        self._attr_name = f"{self.aircond.ACName} Compressor Frequency"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor compressor frequency."""
+        return self.aircond.shadowState.Sta_ODCpFreq
+
+
+class GodaikinCurrentSensor(GodaikinSensorBase):
+    """Outdoor unit current sensor for GO DAIKIN air conditioner."""
+
+    _attr_device_class = SensorDeviceClass.CURRENT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the current sensor."""
+        super().__init__(coordinator, unique_id, "current")
+        self._attr_name = f"{self.aircond.ACName} Current"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor unit current draw."""
+        return self.aircond.shadowState.Sta_ODCurrConsp
+
+
+class GodaikinIndoorCoilTempSensor(GodaikinSensorBase):
+    """Indoor coil temperature sensor for GO DAIKIN air conditioner."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the indoor coil temperature sensor."""
+        super().__init__(coordinator, unique_id, "indoor_coil_temperature")
+        self._attr_name = f"{self.aircond.ACName} Indoor Coil Temperature"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the indoor coil temperature."""
+        return self.aircond.shadowState.Sta_IDCoilTemp
+
+
+class GodaikinOutdoorCoilTempSensor(GodaikinSensorBase):
+    """Outdoor coil temperature sensor for GO DAIKIN air conditioner."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the outdoor coil temperature sensor."""
+        super().__init__(coordinator, unique_id, "outdoor_coil_temperature")
+        self._attr_name = f"{self.aircond.ACName} Outdoor Coil Temperature"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor coil temperature."""
+        return self.aircond.shadowState.Sta_ODCoilTemp
+
+
+class GodaikinDischargeTempSensor(GodaikinSensorBase):
+    """Compressor discharge temperature sensor for GO DAIKIN air conditioner."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the discharge temperature sensor."""
+        super().__init__(coordinator, unique_id, "discharge_temperature")
+        self._attr_name = f"{self.aircond.ACName} Discharge Temperature"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor compressor discharge temperature."""
+        return self.aircond.shadowState.Sta_ODDiscTemp
+
+
+class GodaikinIndoorFanRpmSensor(GodaikinSensorBase):
+    """Indoor fan RPM sensor for GO DAIKIN air conditioner."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "rpm"
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the indoor fan RPM sensor."""
+        super().__init__(coordinator, unique_id, "indoor_fan_rpm")
+        self._attr_name = f"{self.aircond.ACName} Indoor Fan RPM"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the indoor fan speed."""
+        return self.aircond.shadowState.Sta_IDRPM
+
+
+class GodaikinOutdoorFanRpmSensor(GodaikinSensorBase):
+    """Outdoor fan RPM sensor for GO DAIKIN air conditioner."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "rpm"
+
+    def __init__(
+        self,
+        coordinator: GodaikinDataUpdateCoordinator,
+        unique_id: UniqueID,
+    ) -> None:
+        """Initialize the outdoor fan RPM sensor."""
+        super().__init__(coordinator, unique_id, "outdoor_fan_rpm")
+        self._attr_name = f"{self.aircond.ACName} Outdoor Fan RPM"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the outdoor fan speed."""
+        return self.aircond.shadowState.Sta_ODRPM

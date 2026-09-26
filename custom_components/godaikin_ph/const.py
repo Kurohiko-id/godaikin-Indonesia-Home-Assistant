@@ -21,7 +21,7 @@ DEFAULT_MOLD_PROOF_DURATION = 60  # minutes
 DEFAULT_MOLD_PROOF_ENABLED = False
 
 # Platforms
-PLATFORMS = ["climate", "sensor", "light", "switch"]
+PLATFORMS = ["climate", "sensor", "binary_sensor", "light", "switch"]
 
 # HVAC modes
 HVAC_MODES = ["off", "cool", "dry", "fan_only"]
