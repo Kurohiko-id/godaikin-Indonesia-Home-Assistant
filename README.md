@@ -4,6 +4,8 @@ A native Home Assistant integration for GO DAIKIN air conditioners, forked and m
 
 NOTE: This is an unofficial integration and is not affiliated with Daikin. It authenticates through the Philippine GO DAIKIN backend (a different login/API than other regions), which also works for Indonesia-region accounts since both regions share the same underlying user database.
 
+Tested with **Daikin Nusantara Alpha Inverter (FTKH series)** units in Indonesia.
+
 ## Features
 - Auto-discover air conditioners in GO DAIKIN
 - Cool/Dry/Fan modes
